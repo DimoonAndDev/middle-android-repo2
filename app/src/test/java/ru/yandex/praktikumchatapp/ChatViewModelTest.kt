@@ -1,5 +1,11 @@
+import kotlinx.coroutines.CompletableJob
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -45,6 +51,17 @@ class ChatViewModelTest {
     @Test
     fun testReceiveMessage_concurrentMessages() = runTest {
         val messagesToSend = (1..100).map { Message.MyMessage("Message $it") }
-
+        val jobList = mutableListOf<Job>()
+        for (message in messagesToSend) {
+            val job = CoroutineScope(testDispatcher).launch {
+                viewModel.sendMyMessage(message.text)
+            }
+            jobList.add(job)
+        }
+        jobList.joinAll()
+        advanceUntilIdle()
+        val expect = messagesToSend
+        val actual = viewModel.messages.value
+        assertThat(actual, equalTo(expect))
     }
 }
