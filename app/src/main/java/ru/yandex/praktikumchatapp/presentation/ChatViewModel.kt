@@ -1,9 +1,9 @@
 package ru.yandex.praktikumchatapp.presentation
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -11,7 +11,8 @@ import kotlinx.coroutines.launch
 import ru.yandex.praktikumchatapp.data.ChatRepository
 
 class ChatViewModel(
-    val isWithReplies: Boolean = true
+    val isWithReplies: Boolean = true,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
 
     private val repository = ChatRepository()
@@ -24,7 +25,7 @@ class ChatViewModel(
             while (isWithReplies) {
                 repository.getReplyMessage().collect { response ->
 
-                    val currentMessages = _messages.value ?: emptyList()
+                    val currentMessages = _messages.value
                     _messages.value =
                         currentMessages + Message.OtherMessage(response)
 
@@ -34,7 +35,7 @@ class ChatViewModel(
     }
 
     fun sendMyMessage(messageText: String) {
-        _messages.update { currentMessages->
+        _messages.update { currentMessages ->
             currentMessages + Message.MyMessage(messageText)
         }
     }
