@@ -1,7 +1,8 @@
-import kotlinx.coroutines.CoroutineScope
+import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -43,23 +44,20 @@ class ChatViewModelTest {
         advanceUntilIdle()
         val expect = listOf(message)
         val actual = viewModel.messages.value
-        assertThat(actual, equalTo(expect))
+        assertEquals(actual, expect)
     }
 
     @Test
     fun testReceiveMessage_concurrentMessages() = runTest {
         val messagesToSend = (1..100).map { Message.MyMessage("Message $it") }
         val jobList = mutableListOf<Job>()
-        for (message in messagesToSend) {
-            val job = CoroutineScope(testDispatcher).launch {
-                viewModel.sendMyMessage(message.text)
-            }
-            jobList.add(job)
+        coroutineScope {
+            messagesToSend.map { launch { viewModel.sendMyMessage(it.text)}
+            }.joinAll()
         }
         jobList.joinAll()
-        advanceUntilIdle()
         val expect = messagesToSend
         val actual = viewModel.messages.value
-        assertThat(actual, equalTo(expect))
+        assertEquals(actual, expect)
     }
 }
